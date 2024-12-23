@@ -58,4 +58,6 @@ int setupSram();
 int writeToFile(u8 *pBuffer, u32 uiNumBytes, u8 fnIndex, char *pFnPrefix);
   //int writeToFile(u8 *pBuffer, u32 uiNumBytes, u8 fileNameIndex);
 
+int verifyDmaRcvData(char *fileName, u8 *pDesBuffer);
+
 #endif /* SRC_MAIN_H_ */

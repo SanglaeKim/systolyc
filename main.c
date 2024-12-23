@@ -55,6 +55,8 @@ static u8 ucWeightArr[NUM_BYTES_WEIGHT] __attribute__ ((aligned(32)));
 /* Source and Destination buffer for DMA transfer. */
 static u8 DesBuffer[16][NUM_BYTES_UL] __attribute__ ((aligned (64)));
 
+static u8 refBuff[NUM_BYTES_UL/2]__attribute__ ((aligned (64)));
+
 /* Shared variables used to test the callbacks. */
 volatile static u32 Done = 0U; /* Dma transfer is done */
 volatile static u32 Error = 0U; /* Dma Bus Error occurs */
@@ -63,7 +65,7 @@ volatile static PL2PS_EVENT_t rd_event_type = PL2PS_EVENT_EVEN;
 volatile static bool bPL2PS_READ_EVENT = false;
 
 volatile int isr_cnt_even = 0U;
-volatile int isr_cnt_odd = 0U;
+volatile int isr_cnt_odd  = 0U;
 volatile int isr_cnt_cdma = 0U;
 volatile int cdmaErrCount = 0U;
 
@@ -115,7 +117,7 @@ int main() {
 			u32 SrcAddr = sramBaseAddr[rd_event_type];
 
 			Status = XAxiCdma_SimpleTransfer(&AxiCdmaInstance,
-					(UINTPTR) SrcAddr
+					  (UINTPTR) SrcAddr
 					, (UINTPTR) &DesBuffer[fileNameIndex][0]
 					, NUM_BYTES_UL
 					, isr_cdma,
@@ -136,59 +138,15 @@ int main() {
 
 				for(int i=0; i<16; i++){
 
-					char fileNameI[32], fileNameII[32];
+					char fileName[32];
+					sprintf(fileName, "oData%d.bin", 2*i);
 
-					FRESULT Res;
-					UINT NumBytesRead;
-					uint8_t refBuff[NUM_BYTES_UL/2];
+					verifyDmaRcvData(fileName, &DesBuffer[i][0]);               // check first half
 
-					sprintf(fileNameI,  "oData%d.bin", 2*i);
-					sprintf(fileNameII, "oData%d.bin", 2*i+1);
-
-					// check first half
-					SD_File = fileNameI;
-					Res = f_open(&fil, SD_File, FA_READ);
-					if (Res) return XST_FAILURE;
-
-					Res = f_read(&fil, (void*) refBuff, NUM_BYTES_UL/2, &NumBytesRead);
-					if (Res) return XST_FAILURE;
-					for(int j=0; j<NUM_BYTES_UL/2; j++){
-						if(refBuff[j] != DesBuffer[i][j]){
-							xil_printf("final fail!!\n");
-							return XST_FAILURE;
-						}
-					}
-					Res = f_close(&fil);
-					if (Res) return XST_FAILURE;
-
-					// check second half
-					SD_File = fileNameII;
-					Res = f_open(&fil, SD_File, FA_READ);
-					if (Res) return XST_FAILURE;
-
-					Res = f_read(&fil, (void*) refBuff, NUM_BYTES_UL/2, &NumBytesRead);
-					if (Res) return XST_FAILURE;
-					for(int j=0; j<NUM_BYTES_UL/2; j++){
-						if(refBuff[j] != DesBuffer[i][j+NUM_BYTES_UL/2]){
-							xil_printf("final fail!!\n");
-							return XST_FAILURE;
-						}
-					}
-
-					Res = f_close(&fil);
-					if (Res) return XST_FAILURE;
+					sprintf(fileName, "oData%d.bin", 2*i+1);
+					verifyDmaRcvData(fileName, &DesBuffer[i][NUM_BYTES_UL/2]);	// check second half
 
 				}
-
-#ifdef WRITE_TO_FILE
-				xil_printf("writing to sdcard!!\n");
-				for (int i = 0; i < 16; ++i) {
-					Xil_DCacheInvalidateRange((UINTPTR) &DesBuffer[i][0], NUM_BYTES_UL); // not sure if necessary
-					writeToFile(&DesBuffer[i][0], 				NUM_BYTES_UL / 2, 2 * i, 	 "oData");
-					writeToFile(&DesBuffer[i][NUM_BYTES_UL / 2],NUM_BYTES_UL / 2, 2 * i + 1, "oData");
-				}
-				xil_printf("unmounting sdcard!!\n");
-#endif
 
 				f_mount(NULL, "", 0);
 				break;
@@ -201,6 +159,33 @@ int main() {
 	xil_printf("--- Exiting main() --- \r\n");
 
 	return XST_SUCCESS;
+}
+
+int verifyDmaRcvData(char *pcFileName, u8 *pcDesBuffer){
+
+	FRESULT Res;
+	UINT NumBytesRead;
+
+	// check first half
+	SD_File = pcFileName;
+	Res = f_open(&fil, SD_File, FA_READ);
+	if (Res) return XST_FAILURE;
+
+	Res = f_read(&fil, (void*) refBuff, NUM_BYTES_UL/2, &NumBytesRead);
+	if (Res) return XST_FAILURE;
+
+	for(int j=0; j<NUM_BYTES_UL/2; j++){
+		if(refBuff[j] != pcDesBuffer[j]){
+			xil_printf("final fail!!\n");
+			Res = f_close(&fil);
+			return XST_FAILURE;
+		}
+	}
+	Res = f_close(&fil);
+	if (Res) return XST_FAILURE;
+
+	return XST_SUCCESS;
+
 }
 
 //=================================================================
