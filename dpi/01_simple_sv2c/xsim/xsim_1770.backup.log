@@ -1,0 +1,23 @@
+#-----------------------------------------------------------
+# xsim v2023.2 (64-bit)
+# SW Build 4029153 on Fri Oct 13 20:13:54 MDT 2023
+# IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+# SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+# Start of session at: Fri Dec 27 08:07:15 2024
+# Process ID: 1770
+# Current directory: /mnt/d/workspace/fpga/DPI_Tutorial/codes/01_simple_sv2c/xsim
+# Command line: xsim -mode tcl -source {xsim.dir/work.top/xsim_script.tcl}
+# Log file: /mnt/d/workspace/fpga/DPI_Tutorial/codes/01_simple_sv2c/xsim/xsim.log
+# Journal file: /mnt/d/workspace/fpga/DPI_Tutorial/codes/01_simple_sv2c/xsim/xsim.jou
+# Running On: DESKTOP-KB7QQUQ, OS: Linux, CPU Frequency: 3187.198 MHz, CPU Physical cores: 16, Host memory: 16678 MB
+#-----------------------------------------------------------
+source xsim.dir/work.top/xsim_script.tcl
+# xsim {work.top} -autoloadwcfg -tclbatch {xsim_run.tcl}
+Time resolution is 1 ps
+source xsim_run.tcl
+## run all
+FATAL_ERROR: Vivado Simulator kernel has encounted an exception from DPI C function: read_binary_file(). Please correct.
+Time: 0 ps  Iteration: 0  Process: /top/Initial51_1
+  File: /mnt/d/workspace/fpga/DPI_Tutorial/codes/01_simple_sv2c/verilog/file.sv
+## quit
+INFO: [Common 17-41] Interrupt caught. Command should exit soon.

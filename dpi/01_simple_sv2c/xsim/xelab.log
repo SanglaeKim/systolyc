@@ -1,0 +1,16 @@
+Vivado Simulator v2023.2
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+Running: /tools/xilinx/Vivado/2023.2/bin/unwrapped/lnx64.o/xelab -svlog ../verilog/file.sv -sv_lib mydpi 
+Multi-threading is on. Using 30 slave threads.
+INFO: [VRFC 10-2263] Analyzing SystemVerilog file "/mnt/d/workspace/fpga/DPI_Tutorial/codes/01_simple_sv2c/verilog/file.sv" into library work
+INFO: [VRFC 10-311] analyzing module top
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package work.$unit_file_sv
+Compiling module work.top
+Built simulation snapshot work.top

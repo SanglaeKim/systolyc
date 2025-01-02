@@ -1,0 +1,6 @@
+Multi-threading is on. Using 30 slave threads.
+
+Linking with command:
+/tools/xilinx/Vivado/2023.2/lib/lnx64.o/../../tps/lnx64/gcc-9.3.0/bin/g++ -Wa,-W  -O -fPIC  -m64  -shared  -o "mydpi.so" xsim.dir/work/xsc/*.o     -L/tools/xilinx/Vivado/2023.2/lib/lnx64.o -lrdi_simulator_kernel  -L/tools/xilinx/Vivado/2023.2/lib/lnx64.o/../../tps/lnx64/gcc-9.3.0/bin/../lib64 -Wl,--disable-new-dtags -Wl,-rpath=/tools/xilinx/Vivado/2023.2/lib/lnx64.o/../../tps/lnx64/gcc-9.3.0/bin/../lib64 -lrdi_xsim_systemc -std=c++11 -L/tools/xilinx/Vivado/2023.2/lib/lnx64.o/Default  -B/tools/xilinx/Vivado/2023.2/lib/lnx64.o/../../tps/lnx64/gcc-9.3.0/bin/../../binutils-2.37/bin/ 
+
+Done linking: "mydpi.so"

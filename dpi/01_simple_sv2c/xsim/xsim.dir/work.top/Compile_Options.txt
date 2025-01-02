@@ -1,0 +1,1 @@
+-svlog "../verilog/file.sv" -sv_lib "mydpi" 

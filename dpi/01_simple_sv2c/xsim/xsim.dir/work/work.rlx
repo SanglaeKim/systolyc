@@ -1,0 +1,8 @@
+0.7
+2020.2
+Oct 13 2023
+20:21:30
+/mnt/d/workspace/fpga/DPI_Tutorial/codes/01_simple_sv2c/verilog/bram_defines.sv,1735250641,verilog,,,,,,,,,,,,
+/mnt/d/workspace/fpga/DPI_Tutorial/codes/01_simple_sv2c/verilog/defines.sv,1735186978,verilog,,,,,,,,,,,,
+/mnt/d/workspace/fpga/DPI_Tutorial/codes/01_simple_sv2c/verilog/file.sv,1735265803,systemVerilog,,,/mnt/d/workspace/fpga/DPI_Tutorial/codes/01_simple_sv2c/verilog/defines.sv;/mnt/d/workspace/fpga/DPI_Tutorial/codes/01_simple_sv2c/verilog/bram_defines.sv,$unit_file_sv;top,,,,,,,,
+/mnt/d/workspace/fpga/DPI_Tutorial/codes/01_simple_sv2c/verilog/spRom.sv,1735183353,systemVerilog,,,/mnt/d/workspace/fpga/DPI_Tutorial/codes/01_simple_sv2c/verilog/defines.sv,$unit_spRom_sv;spROM,,,,,,,,
