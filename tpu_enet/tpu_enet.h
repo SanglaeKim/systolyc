@@ -17,6 +17,8 @@
 #include "lwip/tcp.h"
 
 #define RECV_BUFFER_DEPTH   (16U)
+#define CHECKSUM_SIZE		(4U)
+//#define RECV_BUFFER_SIZE    (103040U+CHECKSUM_SIZE)
 #define RECV_BUFFER_SIZE    (103040U)
 
 // for upload, pl->ps
@@ -31,23 +33,28 @@
 
 typedef enum{E_IDLE, E_ON_RCV}EnTPU;
 
-typedef struct _StTpuPkt{
-  uintptr_t puiBase;
-  uint32_t uiNumBytes;
-  uint8_t *pPayload;
-}StTpuPkt;
+//typedef struct _StTpuPkt{
+//  uintptr_t puiBase;
+//  uint32_t uiNumBytes;
+//  uint8_t *pPayload;
+//}StTpuPkt;
 
 typedef struct _StTpuPktHeader{
   uint32_t uiBase;
   uint32_t uiNumBytes;
 }StTpuPktHeader;
 
+typedef struct _StTpuPkt {
+  StTpuPktHeader stTpuPktHeader;
+  uint8_t ucPayloadArr[RECV_BUFFER_SIZE];
+}StTpuPkt;
+
 void displayAppInfo(void);
 void tpu_init(void);
 void tpu_update_enet(struct pbuf *p, err_t err);
 void tpu_update_sram(void);
 void tpu_update_isr(u32 *pFileNameIndex);
-//int Init_EthComm (void);
+
 
 int tpu_upload_data(u8 *sndBuff, int msgSize);
 void ProcessTCPEvents();

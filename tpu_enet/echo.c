@@ -89,12 +89,19 @@ err_t recv_callback(void *arg, struct tcp_pcb *tpcb,
 	return ERR_OK;
 }
 
+err_t sent_callback(void *arg, struct tcp_pcb *tpcb, u16_t len) {
+	printf("_&_: %d", len);
+	return ERR_OK;
+}
+
 err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err)
 {
 	static int connection = 1;
 
 	/* set the receive callback for this connection */
 	tcp_recv(newpcb, recv_callback);
+
+//	tcp_sent(newpcb, sent_callback);
 
 	/* just use an integer number indicating the connection id as the
 	   callback argument */

@@ -8,6 +8,18 @@
 #ifndef SRC_GLOBALS_H_
 #define SRC_GLOBALS_H_
 
+extern StTpuPkt g_StTpuPktArr[16] __attribute__ ((aligned (64)));
+
+extern u32 wBases[6];
+extern u32 wFileSize[6];
+
+// batch normalize
+extern  u32 bBases[6];
+extern u32 bFileSize[6];
+
+// input feature map?
+extern u32 iBases[16];
+
 extern XScuGic xScuGic; /* Instance of the Interrupt Controller */
 
 extern XAxiCdma instCDMA_PLtoPS; /* Instance of the XAxiCdma */
@@ -30,8 +42,8 @@ extern volatile  u32 Done_ps2pl; /* Dma transfer is done */
 extern volatile  u32 Error_ps2pl; /* Dma Bus Error occurs */
 extern volatile int isr_cnt_cdma_ps2pl;
 
-extern volatile u8 head;
-extern volatile u8 tail;
+extern volatile u32 head;
+extern volatile u32 tail;
 
 extern u32 g_uiTimerCallbackCount;
 extern bool g_bOnTimerCallback;
@@ -54,5 +66,7 @@ extern u32 fileNameIndex;
 
 extern bool g_bOnTickHandler;
 extern u32 g_uiOnTickHandler;
+
+extern volatile u32 g_uiE_ON_RCV_COUNT;
 
 #endif /* SRC_GLOBALS_H_ */

@@ -56,6 +56,7 @@
 #include "xttcps.h"
 
 #include "tpu_isr.h"
+#include "tpu_enet.h"
 #include "globals.h"
 
 

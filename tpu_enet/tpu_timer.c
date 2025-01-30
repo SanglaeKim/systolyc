@@ -10,6 +10,7 @@
 #include "netif/xadapter.h"
 
 #include "tpu_isr.h"
+#include "tpu_enet.h"
 #include "tpu_timer.h"
 #include "globals.h"
 
