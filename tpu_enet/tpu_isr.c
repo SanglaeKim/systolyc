@@ -67,7 +67,6 @@ int GIC_Init(XScuGic *pXScuGic) {
   return XST_SUCCESS;
 }
 
-
 //=================================================================
 //	Interrupt 연결
 //=================================================================
@@ -118,7 +117,6 @@ void setupInterrupt(XScuGic *pXScuGic) {
   if (Status == XST_FAILURE) xil_printf("Init_CDMA Failed!!\r\n");
 
 }
-
 
 //================================================================================
 //	CDMA 생성 및 인터럽트 등록

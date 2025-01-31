@@ -18,18 +18,20 @@
 #define TPU_DEBUG
 #define WEIGHT_BN_BASE_ADDR (0xA3000000U)
 
+#define DES_BUFFER_DEPTH (8)
+
 void tcp_fasttmr(void);
 void tcp_slowtmr(void);
 
 /* Source and Destination buffer for DMA transfer. */
-static u8 DesBuffer[16][NUM_BYTES_UL] __attribute__ ((aligned (64)));
+static u8 DesBuffer[DES_BUFFER_DEPTH][16][NUM_BYTES_UL] __attribute__ ((aligned (64)));
+static uint32_t des_buffer_head = 0; 
+static uint32_t des_buffer_tail = 0; 
 
 volatile  PL2PS_EVENT_t rd_event_type = PL2PS_EVENT_EVEN;
 volatile  bool bPL2PS_READ_EVENT = false;
 
 //StTpuPktHeader gStTpuPktHeader[RECV_BUFFER_DEPTH];
-//static u8 recv_buffer[RECV_BUFFER_DEPTH][RECV_BUFFER_SIZE]__attribute__ ((aligned(64)));
-static u32 recv_buffer_offset = 0;
 
 
 static const u32 sramBaseAddr[PL2PS_EVENT_MAX] = { SRAM_ADDR_UL_EVEN, SRAM_ADDR_UL_ODD };
@@ -41,10 +43,13 @@ void tpu_update_isr(u32 *pFileNameIndex){
   if (bPL2PS_READ_EVENT) {
 
 	u32 SrcAddr = sramBaseAddr[rd_event_type];
+	uint32_t des_buffer_head_ = des_buffer_head % DES_BUFFER_DEPTH;
+
+	Xil_AssertVoid(des_buffer_head - des_buffer_tail < (DES_BUFFER_DEPTH));
 
 	Status = XAxiCdma_SimpleTransfer(&instCDMA_PLtoPS
 									 ,  (UINTPTR) SrcAddr
-									 , (UINTPTR) &DesBuffer[*pFileNameIndex][0]
+									 , (UINTPTR) &DesBuffer[des_buffer_head_][*pFileNameIndex][0]
 									 , NUM_BYTES_UL
 									 , isr_cdma,
 									 (void *) &instCDMA_PLtoPS);
@@ -58,13 +63,24 @@ void tpu_update_isr(u32 *pFileNameIndex){
 
 	if ((++(*pFileNameIndex) % 16) == 0) {
 	  *pFileNameIndex = 0;
-
-	  // After DMA, invalidate cache to load from DDR
-	  Xil_DCacheInvalidateRange((UINTPTR) &DesBuffer, sizeof(DesBuffer));
-
-	  tpu_upload_data(&DesBuffer[0][0], sizeof(DesBuffer));
-
+	  des_buffer_head++;
 	}
+  }
+}
+
+void tpu_upload(){
+
+  if (des_buffer_head > des_buffer_tail) {
+
+	uint32_t des_buffer_tail_ = des_buffer_tail % DES_BUFFER_DEPTH;
+		
+	// After DMA, invalidate cache to load from DDR
+	Xil_DCacheInvalidateRange((UINTPTR) &DesBuffer[des_buffer_tail_], sizeof(DesBuffer[0]));
+
+	//tpu_upload_data(&DesBuffer[0][0], sizeof(DesBuffer));
+	tpu_upload_data((u8*)&DesBuffer[des_buffer_tail_], sizeof(DesBuffer[0]));
+	des_buffer_tail++;
+
   }
 }
 
@@ -136,105 +152,88 @@ void tpu_update_sram(void)
   tail++;
 }
 
-void tpu_update_enet(struct pbuf *p, err_t err){
-  if(err != ERR_OK){
-	return;
-  }
+//void tpu_update_enet(struct pbuf *p, err_t err, enTpuState *penTpuState ){
+
+void tpu_update_enet(enTpuState *penTpuState ){
 
   const u32 szStTpuPktHeader = sizeof(StTpuPktHeader);
-  static EnTPU enTPU_STATE = E_IDLE;
 
-  while (p != NULL) {
-	u32 head_ = head % RECV_BUFFER_DEPTH;
+  Xil_AssertVoid(head - tail < RECV_BUFFER_DEPTH);
+  u32 head_ = head % RECV_BUFFER_DEPTH;
+  uint32_t rcv_buffer_tail_ = rcv_buffer_tail % RCV_BUFFER_SIZE;
 
-	switch(enTPU_STATE){
-	case E_IDLE:
+  switch(*penTpuState){
+  case E_GET_HEAD:{
+		
+	// Do we have enough for Header?
+	if (rcv_buffer_head >= rcv_buffer_tail + szStTpuPktHeader) {
 
-	  recv_buffer_offset = 0;
-
-
-	  if(p->len >= szStTpuPktHeader){
-
-		// copy only header 
-		memcpy(&g_StTpuPktArr[head_], p->payload, szStTpuPktHeader);
-
-		uint32_t uiBase = g_StTpuPktArr[head_].stTpuPktHeader.uiBase;
-		if(!isTheBaseValid(uiBase, wBases, NOE(wBases)) &&
-		   !isTheBaseValid(uiBase, bBases, NOE(bBases)) &&
-		   !isTheBaseValid(uiBase, iBases, NOE(iBases))) {
-		  xil_printf("[ERROR - 0x%X] Invalid Address!!", uiBase);
-		  return;
-		}
-
-		uint32_t uiNumBytes = g_StTpuPktArr[head_].stTpuPktHeader.uiNumBytes;
-
-		// check if we have header+payload+checksum all
-		if (p->len >= (szStTpuPktHeader+uiNumBytes+CHECKSUM_SIZE)) {
-		  // if so, copy 1. payload
-		  uint32_t uiRcvChecksum; 
-		  memcpy(&g_StTpuPktArr[head_].ucPayloadArr[0] , p->payload+szStTpuPktHeader , uiNumBytes);
-
-		  //  2. checksum
-		  memcpy(&uiRcvChecksum , p->payload + (p->len-CHECKSUM_SIZE) , CHECKSUM_SIZE);
-
-		  uint32_t uiCalChecksum = crc32((uint8_t*)&g_StTpuPktArr[head_], p->len-CHECKSUM_SIZE);
-		  if (uiRcvChecksum != uiCalChecksum) {
-			xil_printf("[Checksum ERROR] cal: x0%x, rcv: 0x%x\r\n", uiCalChecksum ,uiRcvChecksum);
-		  }
-		  head++;
-		}else{
-		  // if so, copy 1. payload
-		  uint32_t uiPayloadPartial = p->len - szStTpuPktHeader;
-		  memcpy(&g_StTpuPktArr[head_].ucPayloadArr[0] , p->payload+szStTpuPktHeader , uiPayloadPartial);
-		  recv_buffer_offset = uiPayloadPartial;
-		  g_uiE_ON_RCV_COUNT = 0;
-		  enTPU_STATE 		 = E_ON_RCV;
-		}
+	  // Are we in the boundary?
+	  if ((rcv_buffer_tail_ + szStTpuPktHeader) > RCV_BUFFER_SIZE) {
+		uint32_t partialNumBytes = RCV_BUFFER_SIZE - rcv_buffer_tail_;
+		memcpy(&g_StTpuPktArr[head_], &rcv_buffer[rcv_buffer_tail_], partialNumBytes);
+		memcpy(&g_StTpuPktArr[head_]+partialNumBytes, &rcv_buffer[0], szStTpuPktHeader -partialNumBytes);
 	  }else{
-		xil_printf("[%d : ERROR - Header Size too small]\r\n");
+		memcpy(&g_StTpuPktArr[head_], &rcv_buffer[rcv_buffer_tail_], szStTpuPktHeader);
 	  }
-	  break;
+	  rcv_buffer_tail += szStTpuPktHeader;
+	  *penTpuState = E_GET_PAYLOAD;
+	}
+  }
+	break;
 
-	case E_ON_RCV:
-	  if (g_uiE_ON_RCV_COUNT>4) {
-		recv_buffer_offset = 0;
-		enTPU_STATE = E_IDLE;
-		xil_printf("[ERROR]g_uiE_ON_RCV_COUNT: %d", g_uiE_ON_RCV_COUNT);
+  case E_GET_PAYLOAD:{
+
+	uint32_t uiNumBytes = g_StTpuPktArr[head_].stTpuPktHeader.uiNumBytes;
+	// Do we have enough for Header?
+	if (rcv_buffer_head >= rcv_buffer_tail + uiNumBytes) {
+
+
+	  // Are we in the boundary?
+	  if (rcv_buffer_tail_ + uiNumBytes > RCV_BUFFER_SIZE) {
+		uint32_t partialNumBytes = RCV_BUFFER_SIZE - rcv_buffer_tail_;
+		memcpy(&g_StTpuPktArr[head_].ucPayloadArr[0], &rcv_buffer[rcv_buffer_tail_], partialNumBytes);
+		memcpy(&g_StTpuPktArr[head_].ucPayloadArr[0]+partialNumBytes, &rcv_buffer[0], uiNumBytes -partialNumBytes);
+	  }else{
+		memcpy(&g_StTpuPktArr[head_].ucPayloadArr[0], &rcv_buffer[rcv_buffer_tail_], uiNumBytes);
 	  }
+	  rcv_buffer_tail += uiNumBytes;
+	  *penTpuState = E_GET_CHKSUM;
+	}
+  }
+	break;
 
-	  uint32_t uiTotalRcvPayload = recv_buffer_offset + p->len;
+  case E_GET_CHKSUM:{
+		
+
+	// Do we have enough for Header?
+	if (rcv_buffer_head >= rcv_buffer_tail + CHKSUM_SIZE) {
+
+	  // Are we in the boundary?
+	  if (rcv_buffer_tail_ + CHKSUM_SIZE > RCV_BUFFER_SIZE) {
+		uint32_t partialNumBytes = RCV_BUFFER_SIZE - rcv_buffer_tail_;
+		memcpy(&g_StTpuPktArr[head_].uiChksum, &rcv_buffer[rcv_buffer_tail_], partialNumBytes);
+		memcpy(&g_StTpuPktArr[head_].uiChksum+partialNumBytes, &rcv_buffer[0], CHKSUM_SIZE -partialNumBytes);
+	  }else{
+		memcpy(&g_StTpuPktArr[head_].uiChksum, &rcv_buffer[rcv_buffer_tail_], CHKSUM_SIZE);
+	  }
 	  uint32_t uiNumBytes = g_StTpuPktArr[head_].stTpuPktHeader.uiNumBytes;
 
-	  if (uiTotalRcvPayload >= uiNumBytes+CHECKSUM_SIZE) {
-		uint32_t uiRcvChecksum; 
-		// copy remaining payload
-		memcpy(&g_StTpuPktArr[head_].ucPayloadArr[recv_buffer_offset] , p->payload, p->len-CHECKSUM_SIZE);
-		// copy checksum
-		memcpy(&uiRcvChecksum , p->payload + (p->len-CHECKSUM_SIZE) , CHECKSUM_SIZE);
-
-		uint32_t uiCalChecksum = crc32((uint8_t*)&g_StTpuPktArr[head_], uiNumBytes+szStTpuPktHeader);
-		if (uiRcvChecksum != uiCalChecksum) {
-		  xil_printf("[Checksum ERROR] cal: x0%x, rcv: 0x%x\r\n", uiCalChecksum ,uiRcvChecksum);
-		}
-
-		recv_buffer_offset = 0;
-		head++;
-		enTPU_STATE 	 	 = E_IDLE;
+	  uint32_t uiRcvChecksum = g_StTpuPktArr[head_].uiChksum;
+	  uint32_t uiCalChecksum = crc32((uint8_t*)&g_StTpuPktArr[head_], uiNumBytes+szStTpuPktHeader);
+	  if (uiRcvChecksum != uiCalChecksum) {
+		xil_printf("[Checksum ERROR] cal: x0%x, rcv: 0x%x\r\n", uiCalChecksum ,uiRcvChecksum);
 	  }else{
-		memcpy(&g_StTpuPktArr[head_].ucPayloadArr[recv_buffer_offset] , p->payload, p->len);
-		recv_buffer_offset += p->len;
+		head++;
 	  }
-	  break;
-	default:
-	  break;
+	  rcv_buffer_tail += CHKSUM_SIZE;
+	  *penTpuState = E_GET_HEAD;
 	}
-
-	// Free the pbuf and move to the next
-	struct pbuf *next = p->next;
-	pbuf_free(p);
-	p = next;
   }
-
+	break;
+  default:
+	break;
+  }
 }
 
 void displayAppInfo(void) {

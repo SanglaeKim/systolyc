@@ -16,8 +16,11 @@
 #include "lwip/err.h"
 #include "lwip/tcp.h"
 
-#define RECV_BUFFER_DEPTH   (16U)
+#define RCV_BUFFER_SIZE (4*1024*1024)
+
+#define RECV_BUFFER_DEPTH   (8U)
 #define CHECKSUM_SIZE		(4U)
+#define CHKSUM_SIZE		(4U)
 //#define RECV_BUFFER_SIZE    (103040U+CHECKSUM_SIZE)
 #define RECV_BUFFER_SIZE    (103040U)
 
@@ -31,7 +34,7 @@
 #define SRAM_ADDR_UL_EVEN   (SRAM_BASE_UL)
 #define SRAM_ADDR_UL_ODD    (SRAM_BASE_UL + OFFSET_UL)
 
-typedef enum{E_IDLE, E_ON_RCV}EnTPU;
+typedef enum{E_GET_HEAD, E_GET_PAYLOAD, E_GET_CHKSUM}enTpuState;
 
 //typedef struct _StTpuPkt{
 //  uintptr_t puiBase;
@@ -47,16 +50,22 @@ typedef struct _StTpuPktHeader{
 typedef struct _StTpuPkt {
   StTpuPktHeader stTpuPktHeader;
   uint8_t ucPayloadArr[RECV_BUFFER_SIZE];
+  uint32_t uiChksum;
 }StTpuPkt;
 
 void displayAppInfo(void);
 void tpu_init(void);
-void tpu_update_enet(struct pbuf *p, err_t err);
+
+//void tpu_update_enet(struct pbuf *p, err_t err, enTpuState *penTpuState );
+void tpu_update_enet(enTpuState *penTpuState );
+  //void tpu_update_enet(struct pbuf *p, err_t err);
+
 void tpu_update_sram(void);
 void tpu_update_isr(u32 *pFileNameIndex);
 
 
 int tpu_upload_data(u8 *sndBuff, int msgSize);
+void tpu_upload();
 void ProcessTCPEvents();
 
 #endif /* SRC_TPU_ENET_H_ */

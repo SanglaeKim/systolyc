@@ -57,7 +57,13 @@
 
 /*******    global variable s******/
 
-StTpuPkt g_StTpuPktArr[16] __attribute__ ((aligned (64)));
+u8 rcv_buffer[RCV_BUFFER_SIZE]__attribute__ ((aligned(64)));
+volatile u32 rcv_buffer_head = 0;
+volatile u32 rcv_buffer_tail = 0;
+
+enTpuState g_enTpuState = E_GET_HEAD;
+
+StTpuPkt g_StTpuPktArr[RECV_BUFFER_DEPTH] __attribute__ ((aligned (64)));
 
 u32 wBases[] = { 0xA3000000, 0xA30004B0, 0xA3002A30, 0xA3003390, 0xA3004650, 0xA3005910 };
 u32 wFileSize[] = { 432, 4608, 1024, 2304, 2304, 1536 };
@@ -180,6 +186,8 @@ int main() {
 
 	ProcessTCPEvents();
 	//transfer_data();
+	tpu_update_enet(&g_enTpuState);
+	tpu_upload();
 	tpu_update_sram();
 	tpu_update_isr(&fileNameIndex);
 
@@ -188,12 +196,12 @@ int main() {
 	  g_uiE_ON_RCV_COUNT++;
 
 	  ++g_uiTimerCallbackCount;
-	  if(g_uiTimerCallbackCount % 4 == 0){
-		  if(g_uiTimerCallbackCount % 64 == 0){
-			xil_printf("\r\n%d : ", g_uiTimerCallbackCount/64);
-		  }
-		xil_printf("_._");
-	  }
+//	  if(g_uiTimerCallbackCount % 4 == 0){
+//		if(g_uiTimerCallbackCount % 64 == 0){
+//		  xil_printf("\r\n%d : ", g_uiTimerCallbackCount/64);
+//		}
+//		xil_printf("_._");
+//	  }
 	}
   }
   

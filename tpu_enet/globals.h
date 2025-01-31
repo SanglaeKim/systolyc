@@ -8,6 +8,17 @@
 #ifndef SRC_GLOBALS_H_
 #define SRC_GLOBALS_H_
 
+
+#include "xscugic.h"
+#include "xaxicdma.h"
+#include "tpu_isr.h"
+
+extern u8 rcv_buffer[RCV_BUFFER_SIZE]__attribute__ ((aligned(64)));
+extern volatile u32 rcv_buffer_head;
+extern volatile u32 rcv_buffer_tail;
+
+extern  enTpuState g_enTpuState;
+
 extern StTpuPkt g_StTpuPktArr[16] __attribute__ ((aligned (64)));
 
 extern u32 wBases[6];
