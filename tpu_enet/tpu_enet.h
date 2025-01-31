@@ -16,11 +16,11 @@
 #include "lwip/err.h"
 #include "lwip/tcp.h"
 
-#define RCV_BUFFER_SIZE (4*1024*1024)
+#define RCV_BUFFER_SIZE     (8*1024*1024)
 
 #define RECV_BUFFER_DEPTH   (8U)
 #define CHECKSUM_SIZE		(4U)
-#define CHKSUM_SIZE		(4U)
+#define CHKSUM_SIZE		    (4U)
 //#define RECV_BUFFER_SIZE    (103040U+CHECKSUM_SIZE)
 #define RECV_BUFFER_SIZE    (103040U)
 

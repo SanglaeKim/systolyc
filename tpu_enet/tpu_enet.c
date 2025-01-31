@@ -13,6 +13,8 @@
 #include "tpu_crc.h"
 #include "globals.h"
 
+//#define ENABLE_CHK_CRC
+
 #define NOE(arr) (sizeof(arr)/sizeof(arr[0]))
 
 #define TPU_DEBUG
@@ -112,21 +114,25 @@ void tpu_update_sram(void)
 
   if( ucMsb == 0xA3 ) {
 
+#ifdef ENABLE_CHK_BASE
 	if(!isTheBaseValid(uiBase, wBases, NOE(wBases)) && 
 	   !isTheBaseValid(uiBase, bBases, NOE(bBases))) {
 	  xil_printf("[ERROR - 0x%X] Invalid Address!!", uiBase);
 	  return;
 	}
+#endif
 
 	memcpy((void*) (uintptr_t)uiBase
 		   ,                    &g_StTpuPktArr[tail_].ucPayloadArr[0]
 		   ,                  uiNumBytes);
   }else{
 
+#ifdef ENABLE_CHK_BASE
 	if(!isTheBaseValid(uiBase, iBases, NOE(iBases))) {
 	  xil_printf("[ERROR - 0x%X] Invalid Address!!", uiBase);
 	  return;
 	}
+#endif
 
 	// Ensure that the address is aligned
 	if ((uiBase % 4) != 0) {
@@ -219,13 +225,14 @@ void tpu_update_enet(enTpuState *penTpuState ){
 	  }
 	  uint32_t uiNumBytes = g_StTpuPktArr[head_].stTpuPktHeader.uiNumBytes;
 
+#ifdef ENABLE_CHK_CRC
 	  uint32_t uiRcvChecksum = g_StTpuPktArr[head_].uiChksum;
 	  uint32_t uiCalChecksum = crc32((uint8_t*)&g_StTpuPktArr[head_], uiNumBytes+szStTpuPktHeader);
 	  if (uiRcvChecksum != uiCalChecksum) {
 		xil_printf("[Checksum ERROR] cal: x0%x, rcv: 0x%x\r\n", uiCalChecksum ,uiRcvChecksum);
-	  }else{
-		head++;
 	  }
+#endif
+	  head++;
 	  rcv_buffer_tail += CHKSUM_SIZE;
 	  *penTpuState = E_GET_HEAD;
 	}
