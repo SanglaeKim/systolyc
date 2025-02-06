@@ -82,7 +82,7 @@ err_t recv_callback(void *arg, struct tcp_pcb *tpcb,
   while (p != NULL) {
 
 	uint32_t rcv_buffer_head_ = rcv_buffer_head % RCV_BUFFER_SIZE;
-	Xil_AssertVoid(rcv_buffer_head - rcv_buffer_tail < RCV_BUFFER_SIZE);
+	Xil_AssertNonvoid(rcv_buffer_head < rcv_buffer_tail + RCV_BUFFER_SIZE);
 	// Are we in the boundary?
 	if ((rcv_buffer_head_+ p->len) > RCV_BUFFER_SIZE) {
 	  uint32_t partialNumBytes = RCV_BUFFER_SIZE - rcv_buffer_head_;

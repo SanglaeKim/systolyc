@@ -54,7 +54,6 @@
 #include "tpu_timer.h"
 #include "tpu_crc.h"
 
-
 /*******    global variable s******/
 
 u8 rcv_buffer[RCV_BUFFER_SIZE]__attribute__ ((aligned(64)));
@@ -65,15 +64,15 @@ enTpuState g_enTpuState = E_GET_HEAD;
 
 StTpuPkt g_StTpuPktArr[RECV_BUFFER_DEPTH] __attribute__ ((aligned (64)));
 
-u32 wBases[] = { 0xA3000000, 0xA30004B0, 0xA3002A30, 0xA3003390, 0xA3004650, 0xA3005910 };
-u32 wFileSize[] = { 432, 4608, 1024, 2304, 2304, 1536 };
+const u32 wBases[] = { 0xA3000000, 0xA30004B0, 0xA3002A30, 0xA3003390, 0xA3004650, 0xA3005910 };
+const u32 wFileSize[] = { 432, 4608, 1024, 2304, 2304, 1536 };
 
 // batch normalize
-u32 bBases[] = { 0xA3006590, 0xA3006690, 0xA3006890, 0xA3006A90, 0xA3006B90, 0xA3006C90 };
-u32 bFileSize[] = { 256, 512, 512, 256, 256, 512 };
+const u32 bBases[] = { 0xA3006590, 0xA3006690, 0xA3006890, 0xA3006A90, 0xA3006B90, 0xA3006C90 };
+const u32 bFileSize[] = { 256, 512, 512, 256, 256, 512 };
 
 // input feature map?
-u32 iBases[] = { 0xA0000000, 0xA0020000, 0xA0040000, 0xA0060000, 0xA0080000, 0xA00A0000, 0xA00C0000, 0xA00E0000
+const u32 iBases[] = { 0xA0000000, 0xA0020000, 0xA0040000, 0xA0060000, 0xA0080000, 0xA00A0000, 0xA00C0000, 0xA00E0000
 				 ,0xA0100000, 0xA0120000, 0xA0140000, 0xA0160000, 0xA0180000, 0xA01A0000, 0xA01C0000, 0xA01E0000 };
 
 XScuGic g_XScuGic; /* Instance of the Interrupt Controller */
@@ -91,7 +90,7 @@ volatile  u32 Error = 0U; /* Dma Bus Error occurs */
 
 volatile int isr_cnt_even = 0U;
 volatile int isr_cnt_odd  = 0U;
-volatile int isr_cnt_cdma = 0U;
+volatile int isr_cnt_cdma_pl2ps = 0U;
 volatile int cdmaErrCount = 0U;
 
 volatile  u32 Done_ps2pl  = 0U; /* Dma transfer is done */
@@ -115,15 +114,13 @@ volatile u32 qBufDiff = 0;
 struct netif server_netif;
 struct netif *echo_netif;
 
-u32 fileNameIndex = 0;
+uint32_t  uiFileNameIndex = 0;
 
 volatile bool g_bOnTickHandler = false;
-//volatile u32 g_uiOnTickHandler = 0;
-//volatile u32 g_rxBuffUseCountMax = 0;
 volatile u32 g_uiE_ON_RCV_COUNT = 0;
 
 int main() {
-
+//	Xil_AssertNonvoid(1>2);
   int Status;
   ip_addr_t ipaddr, netmask, gw;
 
@@ -185,11 +182,11 @@ int main() {
   while (1) {
 
 	ProcessTCPEvents();
-	//transfer_data();
-	tpu_update_enet(&g_enTpuState);
-	tpu_upload();
+
+	tpu_enet_receive(&g_enTpuState);
 	tpu_update_sram();
-	tpu_update_isr(&fileNameIndex);
+	tpu_cdma_pl2ps(&uiFileNameIndex);
+	tpu_enet_send();
 
 	if(g_bOnTickHandler){
 	  g_bOnTickHandler = false;

@@ -56,16 +56,14 @@ typedef struct _StTpuPkt {
 void displayAppInfo(void);
 void tpu_init(void);
 
-//void tpu_update_enet(struct pbuf *p, err_t err, enTpuState *penTpuState );
-void tpu_update_enet(enTpuState *penTpuState );
-  //void tpu_update_enet(struct pbuf *p, err_t err);
+void tpu_enet_receive(enTpuState *penTpuState );
 
 void tpu_update_sram(void);
-void tpu_update_isr(u32 *pFileNameIndex);
+void tpu_cdma_pl2ps(uint32_t *pFileNameIndex);
 
 
 int tpu_upload_data(u8 *sndBuff, int msgSize);
-void tpu_upload();
+void tpu_enet_send();
 void ProcessTCPEvents();
 
 #endif /* SRC_TPU_ENET_H_ */

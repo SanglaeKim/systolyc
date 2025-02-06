@@ -46,7 +46,7 @@ extern volatile  u32 Error; /* Dma Bus Error occurs */
 
 extern volatile int isr_cnt_even;
 extern volatile int isr_cnt_odd ;
-extern volatile int isr_cnt_cdma;
+extern volatile int isr_cnt_cdma_pl2ps;
 extern volatile int cdmaErrCount;
 
 extern volatile  u32 Done_ps2pl; /* Dma transfer is done */

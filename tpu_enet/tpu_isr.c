@@ -24,9 +24,9 @@ void isr_odd_pl2ps(void *CallbackRef) {
   }
 }
 
-void isr_cdma(void *CallBackRef, u32 IrqMask, int *IgnorePtr) {
+void isr_cdma_pl2ps(void *CallBackRef, u32 IrqMask, int *IgnorePtr) {
   bPL2PS_READ_EVENT = false;
-  isr_cnt_cdma++;
+  isr_cnt_cdma_pl2ps++;
   if (IrqMask & XAXICDMA_XR_IRQ_ERROR_MASK) {Error = TRUE;}
   if (IrqMask & XAXICDMA_XR_IRQ_IOC_MASK  ) {Done  = TRUE;}
 }
@@ -54,12 +54,10 @@ int GIC_Init(XScuGic *pXScuGic) {
   Status = XScuGic_CfgInitialize(pXScuGic, IntcConfig, IntcConfig->CpuBaseAddress);
   if (Status != XST_SUCCESS) {	return XST_FAILURE;  }
 
-///////////////////////////////////////////////////////////
   Xil_ExceptionRegisterHandler(
 		  	    XIL_EXCEPTION_ID_IRQ_INT
 			  ,(Xil_ExceptionHandler) XScuGic_InterruptHandler
 			  , pXScuGic);
-////////////////////////////////////////////////////////////////
   Xil_ExceptionInit();
 
   Xil_ExceptionEnable();
@@ -76,8 +74,8 @@ int Enable_IntrruptSystem(XScuGic *pXScuGicInst, u16 IntrruptId,  Xil_ExceptionH
 
   //	DP_RAM 인터럽트 트리거 설정
   if (IntrruptId == INTERRUPT_ID_PL2PS_EVEN || IntrruptId == INTERRUPT_ID_PL2PS_ODD) {
-//	XScuGic_SetPriorityTriggerType(pXScuGicInst, IntrruptId, 0x00, 0x3);
 	XScuGic_SetPriorityTriggerType(pXScuGicInst, IntrruptId, 0x00, 0x3);
+//	XScuGic_SetPriorityTriggerType(pXScuGicInst, IntrruptId, 0x08, 0x3);
   }
 
   Status = XScuGic_Connect(pXScuGicInst
@@ -150,9 +148,12 @@ int Init_CDMA(XScuGic *pXScuGicInst, XAxiCdma *pXAxiCdmaInst, u16 DeviceId,  u32
 int Enable_CMDA_Intrrupt(XScuGic *pXScuGicInst, XAxiCdma *pXAxiCdmaInst, u32 IntrId)
 {
   int Status;
-
-//  XScuGic_SetPriorityTriggerType(pXScuGicInst, IntrId, 0xA0, 0x3);
-  XScuGic_SetPriorityTriggerType(pXScuGicInst, IntrId, 0x00, 0x3);
+  //if(IntrId == INTERRUPT_ID_CDMA0){
+  //	  XScuGic_SetPriorityTriggerType(pXScuGicInst, IntrId, 0x00, 0x3);
+  //}else{
+  //	  XScuGic_SetPriorityTriggerType(pXScuGicInst, IntrId, 0xA0, 0x3);
+  //}
+  XScuGic_SetPriorityTriggerType(pXScuGicInst, IntrId, 0xA0, 0x3);
 
   // Connect the device driver handler that will be called when an
   // interrupt for the device occurs, the handler defined above performs

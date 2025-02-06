@@ -29,7 +29,7 @@ typedef enum {
 
 void isr_even_pl2ps(void *CallbackRef);
 void isr_odd_pl2ps(void *CallbackRef);
-void isr_cdma(void *CallBackRef, u32 IrqMask, int *IgnorePtr) ;
+void isr_cdma_pl2ps(void *CallBackRef, u32 IrqMask, int *IgnorePtr) ;
 void isr_cdma_ps2pl(void *CallBackRef, u32 IrqMask, int *IgnorePtr);
 
 
