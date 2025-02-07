@@ -42,17 +42,13 @@
 #include "tpu_enet.h"
 #include "globals.h"
 
-struct 	tcp_pcb *hTCP_ServerPort;	//	TCP 서버 포트
+void tcp_err_cb(void *arg, err_t err);
 
-int transfer_data() {return 0;}
+unsigned int TCP_Conn_Status = 0;
 
 void print_app_header()
 {
-#if (LWIP_IPV6==0)
   xil_printf("\n\r\n\r-----lwIP TCP echo server ------\n\r");
-#else
-  xil_printf("\n\r\n\r-----lwIPv6 TCP echo server ------\n\r");
-#endif
   xil_printf("TCP packets sent to port 6001 will be echoed back\n\r");
 }
 
@@ -75,23 +71,26 @@ err_t recv_callback(void *arg, struct tcp_pcb *tpcb,
 	  xil_printf("p->len != p->len_tot\n");
 	}
   }
-  //tpu_update_enet(p, err, &g_enTpuState);
 
   //if(err != ERR_OK) return;
 
   while (p != NULL) {
 
-	uint32_t rcv_buffer_head_ = rcv_buffer_head % RCV_BUFFER_SIZE;
-	Xil_AssertNonvoid(rcv_buffer_head < rcv_buffer_tail + RCV_BUFFER_SIZE);
-	// Are we in the boundary?
-	if ((rcv_buffer_head_+ p->len) > RCV_BUFFER_SIZE) {
-	  uint32_t partialNumBytes = RCV_BUFFER_SIZE - rcv_buffer_head_;
-	  memcpy(&rcv_buffer[rcv_buffer_head_], p->payload, partialNumBytes);
-	  memcpy(&rcv_buffer[0], (uint8_t *)p->payload+partialNumBytes, p->len - partialNumBytes);
-	}else{
-	  memcpy(&rcv_buffer[rcv_buffer_head_], p->payload, p->len);
+	uint64_t enet_rcv_buffer_head_ = enet_rcv_buffer_head % ENET_RCV_BUFFER_SIZE;
+	if(enet_rcv_buffer_head > enet_rcv_buffer_tail + ENET_RCV_BUFFER_SIZE){
+	  xil_printf("[ERROR]lwip rcv buffer over flow[HEAD: %u, TAIL: %u\r\n", enet_rcv_buffer_head, enet_rcv_buffer_tail);
 	}
-	rcv_buffer_head += p->len;
+	Xil_AssertNonvoid(enet_rcv_buffer_head < enet_rcv_buffer_tail + ENET_RCV_BUFFER_SIZE);
+
+	// Are we in the boundary?
+	if ((enet_rcv_buffer_head_+ p->len) > ENET_RCV_BUFFER_SIZE) {
+	  uint32_t partialNumBytes = ENET_RCV_BUFFER_SIZE - enet_rcv_buffer_head_;
+	  memcpy(&enet_rcv_buffer[enet_rcv_buffer_head_], p->payload, partialNumBytes);
+	  memcpy(&enet_rcv_buffer[0], (uint8_t *)p->payload+partialNumBytes, p->len - partialNumBytes);
+	}else{
+	  memcpy(&enet_rcv_buffer[enet_rcv_buffer_head_], p->payload, p->len);
+	}
+	enet_rcv_buffer_head += p->len;
 
 	// Free the pbuf and move to the next
 	struct pbuf *next = p->next;
@@ -124,6 +123,8 @@ err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err)
   tcp_recv(newpcb, recv_callback);
 
   //	tcp_sent(newpcb, sent_callback);
+  //	error callback
+  //tcp_err(newpcb, tcp_err_cb);
 
   /* just use an integer number indicating the connection id as the
 	 callback argument */
@@ -136,6 +137,16 @@ err_t accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err)
   connection++;
 
   return ERR_OK;
+}
+
+//================================================================================
+//	TCP Error CB
+//================================================================================
+void tcp_err_cb(void *arg, err_t err)
+{
+  TCP_Conn_Status = 0;
+
+  xil_printf("TCP Err CB : %d\n", err);
 }
 
 
@@ -176,3 +187,45 @@ int start_application()
 
   return 0;
 }
+
+err_t chk_if_error( err_t err) {
+  if (err != ERR_OK) {
+    xil_printf("recv_callback error: %d\n", err);
+
+    // Handle specific error codes
+    switch (err) {
+	case ERR_MEM:
+	  xil_printf("Memory error\n");
+	  break;
+	case ERR_BUF:
+	  xil_printf("Buffer error\n");
+	  break;
+	case ERR_TIMEOUT:
+	  xil_printf("Timeout error\n");
+	  break;
+	case ERR_ABRT:
+	  xil_printf("Connection aborted\n");
+	  break;
+	case ERR_RST:
+	  xil_printf("Connection reset by peer\n");
+	  break;
+	case ERR_CONN:
+	  xil_printf("Connection error\n");
+	  break;
+	case ERR_VAL:
+	  xil_printf("Invalid argument\n");
+	  break;
+	default:
+	  xil_printf("Unknown error\n");
+	  break;
+    }
+
+    return ERR_ABRT;
+  }
+
+  // Process received data
+  // ...
+
+  return ERR_OK;
+}
+

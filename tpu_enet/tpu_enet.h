@@ -16,9 +16,9 @@
 #include "lwip/err.h"
 #include "lwip/tcp.h"
 
-#define RCV_BUFFER_SIZE     (8*1024*1024)
+#define ENET_RCV_BUFFER_SIZE     (4*1024*1024)
 
-#define RECV_BUFFER_DEPTH   (8U)
+#define PKT_BUFFER_SIZE     (4U)
 #define CHECKSUM_SIZE		(4U)
 #define CHKSUM_SIZE		    (4U)
 //#define RECV_BUFFER_SIZE    (103040U+CHECKSUM_SIZE)
@@ -61,9 +61,9 @@ void tpu_enet_receive(enTpuState *penTpuState );
 void tpu_update_sram(void);
 void tpu_cdma_pl2ps(uint32_t *pFileNameIndex);
 
-
 int tpu_upload_data(u8 *sndBuff, int msgSize);
 void tpu_enet_send();
 void ProcessTCPEvents();
+bool isTheBaseValid(const u32 Base, const u32 Bases[], u32 numElements);
 
 #endif /* SRC_TPU_ENET_H_ */

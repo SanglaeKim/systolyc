@@ -4,27 +4,44 @@
  *  Created on: 2025. 1. 13.
  *      Author: User
  */
+//#include "xscugic.h"
 #include "tpu_enet.h"
 #include "tpu_isr.h"
 #include "globals.h"
 
+#define CLR_INTERRUPT (0x0U)
+#define DMA_DONE      (0x2U)
+
+volatile static	uint32_t *pTpuIntCntlReg = (uint32_t*)0xA3007D00;
+
 void isr_even_pl2ps(void *CallbackRef) {
   if (!bPL2PS_READ_EVENT) {
+
+	//*pTpuIntCntlReg = CLR_INTERRUPT;
+
 	isr_cnt_even++;
 	bPL2PS_READ_EVENT = true;
 	rd_event_type = PL2PS_EVENT_EVEN;
+//	XScuGic_Acknowledge(&xScuGic, INTERRUPT_ID_PL2PS_EVEN);
   }
 }
 
 void isr_odd_pl2ps(void *CallbackRef) {
   if (!bPL2PS_READ_EVENT) {
+
+	//*pTpuIntCntlReg = CLR_INTERRUPT;
+
 	isr_cnt_odd++;
 	bPL2PS_READ_EVENT = true;
 	rd_event_type = PL2PS_EVENT_ODD;
+//	XScuGic_Acknowledge(&xScuGic, INTERRUPT_ID_PL2PS_ODD);
   }
 }
 
 void isr_cdma_pl2ps(void *CallBackRef, u32 IrqMask, int *IgnorePtr) {
+
+  *pTpuIntCntlReg = DMA_DONE;
+
   bPL2PS_READ_EVENT = false;
   isr_cnt_cdma_pl2ps++;
   if (IrqMask & XAXICDMA_XR_IRQ_ERROR_MASK) {Error = TRUE;}
@@ -74,6 +91,7 @@ int Enable_IntrruptSystem(XScuGic *pXScuGicInst, u16 IntrruptId,  Xil_ExceptionH
 
   //	DP_RAM 인터럽트 트리거 설정
   if (IntrruptId == INTERRUPT_ID_PL2PS_EVEN || IntrruptId == INTERRUPT_ID_PL2PS_ODD) {
+	//0x3 : rising_edge, 0x0 : low level trig, 0x1 : high level trig
 	XScuGic_SetPriorityTriggerType(pXScuGicInst, IntrruptId, 0x00, 0x3);
 //	XScuGic_SetPriorityTriggerType(pXScuGicInst, IntrruptId, 0x08, 0x3);
   }

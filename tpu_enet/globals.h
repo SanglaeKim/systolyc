@@ -13,23 +13,24 @@
 #include "xaxicdma.h"
 #include "tpu_isr.h"
 
-extern u8 rcv_buffer[RCV_BUFFER_SIZE]__attribute__ ((aligned(64)));
-extern volatile u32 rcv_buffer_head;
-extern volatile u32 rcv_buffer_tail;
+extern u8 enet_rcv_buffer[ENET_RCV_BUFFER_SIZE]__attribute__ ((aligned(64)));
+extern volatile uint64_t enet_rcv_buffer_head;
+extern volatile uint64_t enet_rcv_buffer_tail;
 
 extern  enTpuState g_enTpuState;
 
-extern StTpuPkt g_StTpuPktArr[16] __attribute__ ((aligned (64)));
+extern StTpuPkt g_StTpuPktArr[PKT_BUFFER_SIZE] __attribute__ ((aligned (64)));
 
 extern u32 wBases[6];
 extern u32 wFileSize[6];
 
 // batch normalize
-extern  u32 bBases[6];
-extern u32 bFileSize[6];
+extern const u32 bBases[6];
+extern const u32 bFileSize[6];
 
 // input feature map?
-extern u32 iBases[16];
+extern const u32 iBases[16];
+extern const u32 iFileSize[16];
 
 extern XScuGic xScuGic; /* Instance of the Interrupt Controller */
 
@@ -53,8 +54,8 @@ extern volatile  u32 Done_ps2pl; /* Dma transfer is done */
 extern volatile  u32 Error_ps2pl; /* Dma Bus Error occurs */
 extern volatile int isr_cnt_cdma_ps2pl;
 
-extern volatile u32 head;
-extern volatile u32 tail;
+extern volatile u32 tpu_pkt_head;
+extern volatile u32 tpu_pkt_tail;
 
 extern u32 g_uiTimerCallbackCount;
 extern bool g_bOnTimerCallback;

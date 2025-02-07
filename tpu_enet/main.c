@@ -55,14 +55,9 @@
 #include "tpu_crc.h"
 
 /*******    global variable s******/
-
-u8 rcv_buffer[RCV_BUFFER_SIZE]__attribute__ ((aligned(64)));
-volatile u32 rcv_buffer_head = 0;
-volatile u32 rcv_buffer_tail = 0;
+struct 	tcp_pcb *hTCP_ServerPort;	//	TCP 서버 포트
 
 enTpuState g_enTpuState = E_GET_HEAD;
-
-StTpuPkt g_StTpuPktArr[RECV_BUFFER_DEPTH] __attribute__ ((aligned (64)));
 
 const u32 wBases[] = { 0xA3000000, 0xA30004B0, 0xA3002A30, 0xA3003390, 0xA3004650, 0xA3005910 };
 const u32 wFileSize[] = { 432, 4608, 1024, 2304, 2304, 1536 };
@@ -73,7 +68,9 @@ const u32 bFileSize[] = { 256, 512, 512, 256, 256, 512 };
 
 // input feature map?
 const u32 iBases[] = { 0xA0000000, 0xA0020000, 0xA0040000, 0xA0060000, 0xA0080000, 0xA00A0000, 0xA00C0000, 0xA00E0000
-				 ,0xA0100000, 0xA0120000, 0xA0140000, 0xA0160000, 0xA0180000, 0xA01A0000, 0xA01C0000, 0xA01E0000 };
+					   ,0xA0100000, 0xA0120000, 0xA0140000, 0xA0160000, 0xA0180000, 0xA01A0000, 0xA01C0000, 0xA01E0000 };
+const u32 iFileSize[] = { 103040, 103040, 103040, 103040, 103040, 103040, 103040, 103040
+						  ,103040 ,103040, 103040 ,103040 ,103040 ,103040 ,103040 ,103040};
 
 XScuGic g_XScuGic; /* Instance of the Interrupt Controller */
 
@@ -105,8 +102,6 @@ volatile bool g_bOnTimerCallback = false;
 
 volatile int ps2pl_cdmaErrCount=0;
 
-volatile u32 head = 0;
-volatile u32 tail = 0;
 
 volatile u32 pl_dl_count = 0;
 volatile u32 qBufDiff = 0;
@@ -119,8 +114,11 @@ uint32_t  uiFileNameIndex = 0;
 volatile bool g_bOnTickHandler = false;
 volatile u32 g_uiE_ON_RCV_COUNT = 0;
 
+  volatile static	uint32_t *pPlIntIntervalReg = (uint32_t*)(0xA3007D00 + 40);
+
 int main() {
-//	Xil_AssertNonvoid(1>2);
+
+  *pPlIntIntervalReg = 11000;// 0 ~ 12000
   int Status;
   ip_addr_t ipaddr, netmask, gw;
 
@@ -178,6 +176,7 @@ int main() {
   /* start the application (web server, rxtest, txtest, etc..) */
   start_application();
 
+
   /* receive and process packets */
   while (1) {
 
@@ -193,12 +192,12 @@ int main() {
 	  g_uiE_ON_RCV_COUNT++;
 
 	  ++g_uiTimerCallbackCount;
-//	  if(g_uiTimerCallbackCount % 4 == 0){
-//		if(g_uiTimerCallbackCount % 64 == 0){
-//		  xil_printf("\r\n%d : ", g_uiTimerCallbackCount/64);
-//		}
-//		xil_printf("_._");
-//	  }
+	  //	  if(g_uiTimerCallbackCount % 4 == 0){
+	  //		if(g_uiTimerCallbackCount % 64 == 0){
+	  //		  xil_printf("\r\n%d : ", g_uiTimerCallbackCount/64);
+	  //		}
+	  //		xil_printf("_._");
+	  //	  }
 	}
   }
   
