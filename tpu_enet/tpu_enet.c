@@ -19,13 +19,16 @@
 //#define ENABLE_CHK_CRC
 //#define ENABLE_CHK_BASE
 
-//#define TPU_DEBUG
 #define WEIGHT_BN_BASE_ADDR (0xA3000000U)
 
-#define DES_BUFFER_DEPTH (4U)
+#define DES_BUFFER_DEPTH (8U)
 
 void tcp_fasttmr(void);
 void tcp_slowtmr(void);
+
+bool ifm_download_block = false;
+uint32_t ifm_donwload_count = 0;
+uint64_t enet_send_err_count = 0;
 
 volatile uint64_t enet_rcv_buffer_head = 0;
 volatile uint64_t enet_rcv_buffer_tail = 0;
@@ -172,6 +175,8 @@ void tpu_update_sram(void)
 		   ,   uiNumBytes);
   }else{
 
+	//if(ifm_download_block) {goto tpu_update_sram_end;}
+
 #ifdef ENABLE_CHK_BASE_
 	if(!isTheBaseValid(uiBase, iBases, NOE(iBases))) {
 	  xil_printf("[ERROR - 0x%X] Invalid Address!!", uiBase);
@@ -197,8 +202,14 @@ void tpu_update_sram(void)
 	}
 	Done_ps2pl = 0;
 	if (Status == XST_FAILURE) ps2pl_cdmaErrCount++;
+
+	//++ifm_donwload_count;
+	//if(ifm_donwload_count % 16 == 0){ifm_download_block = false;}
+
   }
+  // tpu_update_sram_end:
   tpu_pkt_tail++;
+
 }
 
 void tpu_cdma_pl2ps(uint32_t *pFileNameIndex)
@@ -250,6 +261,8 @@ void tpu_cdma_pl2ps(uint32_t *pFileNameIndex)
 
 	fileNameIndex = fileNameIndex + 1;
 	if (((fileNameIndex) % 16) == 0) {
+
+	  //ifm_download_block = false;
 	  if(isr_cnt_even_ != isr_cnt_odd_){
 		xil_printf("[ERROR] isr_cnt_even: %d, isr_cnt_odd: %d\r\n", isr_cnt_even_, isr_cnt_odd_);
 	  }
@@ -279,10 +292,6 @@ void tpu_enet_send()
   }
 }
 
-uint64_t enet_send_err_count = 0;
-//=========================================================================
-//	TCP 전송 함수
-//=========================================================================
 int tpu_upload_data(u8 *sndBuff, int msgSize)
 {
   //  int rtn = 0;
@@ -316,18 +325,18 @@ int tpu_upload_data(u8 *sndBuff, int msgSize)
 		tcp_output (hTCP_ServerPort);
 		errCnt++;
 		enet_send_err_count++;
-//		xil_printf("Transfer error : %d\r\n", rtn);
+		//		xil_printf("Transfer error : %d\r\n", rtn);
 	  }
 	}
 	else {
 	  tcp_output (hTCP_ServerPort);
-	  errCnt++;
+	  //	  errCnt++;
 	  enet_send_err_count++;
-//	  xil_printf("Transfer error : %d\r\n", rtn);
+	  //	  xil_printf("Transfer error : %d\r\n", rtn);
 	}
 
 	//	오류 처리
-	if (errCnt > 20000000) {
+	if (errCnt > 2000) {
 	  xil_printf("Transfer error : %d\n", rtn);
 	  //TCP_Conn_Status = 0;
 	  //			tcp_server_abort (hTCP_ServerPort);

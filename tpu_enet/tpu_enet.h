@@ -21,8 +21,7 @@
 #define PKT_BUFFER_SIZE     (4U)
 #define CHECKSUM_SIZE		(4U)
 #define CHKSUM_SIZE		    (4U)
-//#define RECV_BUFFER_SIZE    (103040U+CHECKSUM_SIZE)
-#define RECV_BUFFER_SIZE    (103040U)
+#define TPU_PKT_PL_SIZE    (103040U)
 
 // for upload, pl->ps
 #define SRAM_BASE_UL        (0xA1000000U)
@@ -49,7 +48,7 @@ typedef struct _StTpuPktHeader{
 
 typedef struct _StTpuPkt {
   StTpuPktHeader stTpuPktHeader;
-  uint8_t ucPayloadArr[RECV_BUFFER_SIZE];
+  uint8_t ucPayloadArr[TPU_PKT_PL_SIZE];
   uint32_t uiChksum;
 }StTpuPkt;
 
