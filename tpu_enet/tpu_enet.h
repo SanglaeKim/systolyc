@@ -19,7 +19,7 @@
 #define ENET_RCV_BUFFER_SIZE     (4*1024*1024)
 
 #define PKT_BUFFER_SIZE     (4U)
-#define CHECKSUM_SIZE		(4U)
+
 #define CHKSUM_SIZE		    (4U)
 #define TPU_PKT_PL_SIZE    (103040U)
 

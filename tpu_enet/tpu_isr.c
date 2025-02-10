@@ -75,6 +75,7 @@ int GIC_Init(XScuGic *pXScuGic) {
 		  	    XIL_EXCEPTION_ID_IRQ_INT
 			  ,(Xil_ExceptionHandler) XScuGic_InterruptHandler
 			  , pXScuGic);
+
   Xil_ExceptionInit();
 
   Xil_ExceptionEnable();

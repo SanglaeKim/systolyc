@@ -16,8 +16,8 @@
 
 /************************** Variable Definitions *****************************/
 static TmrCntrSetup SettingsTable[2] = {
-	{2, 0, 0, 0},	/* Ticker timer counter initial setup, only output freq */
-	{2, 0, 0, 0}, /* PWM timer counter initial setup, only output freq */
+	{4, 0, 0, 0},	/* Ticker timer counter initial setup, only output freq */
+	{4, 0, 0, 0}, /* PWM timer counter initial setup, only output freq */
 };
 
 static volatile u32 PWM_UpdateFlag;	/* Flag used by Ticker to signal PWM */

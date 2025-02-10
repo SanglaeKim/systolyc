@@ -59,6 +59,11 @@ struct 	tcp_pcb *hTCP_ServerPort;	//	TCP 서버 포트
 
 enTpuState g_enTpuState = E_GET_HEAD;
 
+
+extern volatile uint32_t des_buffer_head; 
+extern volatile uint32_t des_buffer_tail; 
+
+
 const u32 wBases[] = { 0xA3000000, 0xA30004B0, 0xA3002A30, 0xA3003390, 0xA3004650, 0xA3005910 };
 const u32 wFileSize[] = { 432, 4608, 1024, 2304, 2304, 1536 };
 
@@ -102,6 +107,9 @@ volatile bool g_bOnTimerCallback = false;
 
 volatile int ps2pl_cdmaErrCount=0;
 
+static uint32_t counter = 0;
+extern volatile uint64_t enet_rcv_buffer_head;
+extern volatile uint64_t enet_rcv_buffer_tail;
 
 volatile u32 pl_dl_count = 0;
 volatile u32 qBufDiff = 0;
@@ -114,11 +122,11 @@ uint32_t  uiFileNameIndex = 0;
 volatile bool g_bOnTickHandler = false;
 volatile u32 g_uiE_ON_RCV_COUNT = 0;
 
-  volatile static	uint32_t *pPlIntIntervalReg = (uint32_t*)(0xA3007D00 + 40);
+volatile static	uint32_t *pPlIntIntervalReg = (uint32_t*)(0xA3007D00 + 40);
 
 int main() {
 
-  *pPlIntIntervalReg = 11000;// 0 ~ 12000
+//  *pPlIntIntervalReg = 11000;// 0 ~ 12000
   int Status;
   ip_addr_t ipaddr, netmask, gw;
 
@@ -187,8 +195,29 @@ int main() {
 	tpu_cdma_pl2ps(&uiFileNameIndex);
 	tpu_enet_send();
 
+	extern volatile u32 tpu_pkt_head;
+	extern volatile u32 tpu_pkt_tail;
+
 	if(g_bOnTickHandler){
 	  g_bOnTickHandler = false;
+
+	  if (g_uiTimerCallbackCount % 4 == 0) {
+		
+		uint64_t enet_rcv_buffer_tail_ = enet_rcv_buffer_tail;
+		uint64_t enet_rcv_buffer_head_ = enet_rcv_buffer_head;
+
+		uint32_t des_buffer_head_ = des_buffer_head;
+		uint32_t des_buffer_tail_ = des_buffer_tail;
+
+		uint32_t tpu_pkt_head_ = tpu_pkt_head;
+		uint32_t tpu_pkt_tail_ = tpu_pkt_tail;
+
+		xil_printf("%d: ", counter++);
+		xil_printf("tpu_pkt: %u ", tpu_pkt_head_ - tpu_pkt_tail_);
+		xil_printf("des_buffer: %u ", des_buffer_head_ - des_buffer_tail_);
+		xil_printf("enet_rcv_buffer: %llu\r\n", enet_rcv_buffer_head_ - enet_rcv_buffer_tail_);
+	  }
+
 	  g_uiE_ON_RCV_COUNT++;
 
 	  ++g_uiTimerCallbackCount;

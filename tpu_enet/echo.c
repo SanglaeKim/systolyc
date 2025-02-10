@@ -72,9 +72,9 @@ err_t recv_callback(void *arg, struct tcp_pcb *tpcb,
 	}
   }
 
-  //if(err != ERR_OK) return;
+  if(err != ERR_OK) return err;
 
-  while (p != NULL) {
+//  while (p != NULL) {
 
 	uint64_t enet_rcv_buffer_head_ = enet_rcv_buffer_head % ENET_RCV_BUFFER_SIZE;
 	if(enet_rcv_buffer_head > enet_rcv_buffer_tail + ENET_RCV_BUFFER_SIZE){
@@ -93,10 +93,10 @@ err_t recv_callback(void *arg, struct tcp_pcb *tpcb,
 	enet_rcv_buffer_head += p->len;
 
 	// Free the pbuf and move to the next
-	struct pbuf *next = p->next;
-	pbuf_free(p);
-	p = next;
-  }
+//	struct pbuf *next = p->next;
+//	pbuf_free(p);
+//	p = next;
+//  }
 
   //	/* in this case, we assume that the payload is < TCP_SND_BUF */
   //	if (tcp_sndbuf(tpcb) > p->len) {
@@ -105,7 +105,7 @@ err_t recv_callback(void *arg, struct tcp_pcb *tpcb,
   //		xil_printf("no space in tcp_sndbuf\n\r");
 
   /* free the received pbuf */
-  //	pbuf_free(p);
+  	pbuf_free(p);
 
   return ERR_OK;
 }

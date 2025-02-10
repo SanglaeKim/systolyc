@@ -21,7 +21,7 @@
 
 #define WEIGHT_BN_BASE_ADDR (0xA3000000U)
 
-#define DES_BUFFER_DEPTH (8U)
+#define DES_BUFFER_DEPTH (4U)
 
 void tcp_fasttmr(void);
 void tcp_slowtmr(void);
@@ -39,15 +39,14 @@ volatile u32 tpu_pkt_tail = 0;
 StTpuPkt g_StTpuPktArr[PKT_BUFFER_SIZE] __attribute__ ((aligned (64)));
 
 /* Source and Destination buffer for DMA transfer. */
-static uint32_t des_buffer_head = 0; 
-static uint32_t des_buffer_tail = 0; 
+volatile uint32_t des_buffer_head = 0; 
+volatile uint32_t des_buffer_tail = 0; 
 static u8 DesBuffer[DES_BUFFER_DEPTH][16][NUM_BYTES_UL] __attribute__ ((aligned (64)));
 
 volatile  PL2PS_EVENT_t rd_event_type = PL2PS_EVENT_EVEN;
 volatile  bool bPL2PS_READ_EVENT = false;
 
 static const u32 sramBaseAddr[PL2PS_EVENT_MAX] = { SRAM_ADDR_UL_EVEN, SRAM_ADDR_UL_ODD };
-
 void tpu_enet_receive(enTpuState *penTpuState )
 {
   const u32 szStTpuPktHeader = sizeof(StTpuPktHeader);
@@ -191,12 +190,19 @@ void tpu_update_sram(void)
 	}
 
 	Xil_DCacheFlushRange((UINTPTR) &g_StTpuPktArr[tail_].ucPayloadArr[0], uiNumBytes);
-	Status = XAxiCdma_SimpleTransfer(&instCDMA_PStoPL
-									 , (UINTPTR) &g_StTpuPktArr[tail_].ucPayloadArr[0]
-									 , (UINTPTR) uiBase
-									 ,           uiNumBytes
-									 ,           isr_cdma_ps2pl
-									 , (void *) &instCDMA_PStoPL);
+	uint32_t retries = 16;
+	while(retries){
+	  retries -= 1;
+	  Status = XAxiCdma_SimpleTransfer(&instCDMA_PStoPL
+									   , (UINTPTR) &g_StTpuPktArr[tail_].ucPayloadArr[0]
+									   , (UINTPTR) uiBase
+									   ,           uiNumBytes
+									   ,           isr_cdma_ps2pl
+									   , (void *) &instCDMA_PStoPL);
+	  if (Status == XST_SUCCESS) {
+		break; 
+	  }
+	}
 	while (!Done_ps2pl) {
 	  // Wait for CDMA transfer to complete!!
 	}
@@ -267,7 +273,9 @@ void tpu_cdma_pl2ps(uint32_t *pFileNameIndex)
 		xil_printf("[ERROR] isr_cnt_even: %d, isr_cnt_odd: %d\r\n", isr_cnt_even_, isr_cnt_odd_);
 	  }
 	  if(++counter % 10 == 0){
-		xil_printf("%d\r\n", counter);
+		//xil_printf("%d: ", counter);
+		//xil_printf("des_buffer: %u ", des_buffer_head - des_buffer_tail);
+		//xil_printf("enet_rcv_buffer: %u\r\n", enet_rcv_buffer_head - enet_rcv_buffer_tail);
 	  }
 	  *pFileNameIndex = 0;
 	  des_buffer_head++;  
@@ -300,6 +308,8 @@ int tpu_upload_data(u8 *sndBuff, int msgSize)
   int sndSize = 0;
   int totSendedSize = 0;
   int loopRun = 1;
+  //u8_t apiflags = TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE;
+  u8_t apiflags = 0;
 
   //	while (loopRun && TCP_Conn_Status && (totSendedSize < msgSize))
   while (loopRun && (totSendedSize < msgSize)) {
@@ -313,7 +323,7 @@ int tpu_upload_data(u8 *sndBuff, int msgSize)
 		sndSize = hTCP_ServerPort->snd_buf;
 
 	  //	Àü¼Û
-	  rtn = tcp_write(hTCP_ServerPort, &sndBuff[totSendedSize], sndSize, TCP_WRITE_FLAG_COPY);
+	  rtn = tcp_write(hTCP_ServerPort, &sndBuff[totSendedSize], sndSize, apiflags);
 	  //	  rtn = tcp_write(hTCP_ServerPort, &sndBuff[totSendedSize], sndSize, 1);
 
 	  tcp_output (hTCP_ServerPort);
@@ -325,7 +335,7 @@ int tpu_upload_data(u8 *sndBuff, int msgSize)
 		tcp_output (hTCP_ServerPort);
 		errCnt++;
 		enet_send_err_count++;
-		//		xil_printf("Transfer error : %d\r\n", rtn);
+				xil_printf("Transfer error : %d\r\n", rtn);
 	  }
 	}
 	else {
